@@ -17,6 +17,7 @@
 
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.lblIpStartLabel = new System.Windows.Forms.Label();
             this.txtIpStart = new System.Windows.Forms.TextBox();
@@ -24,6 +25,11 @@
             this.txtIpEnd = new System.Windows.Forms.TextBox();
             this.btnScan = new System.Windows.Forms.Button();
             this.dgvResults = new System.Windows.Forms.DataGridView();
+            this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.copyIPToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.openInBrowserToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.remoteDesktopToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.sshToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.progressBar = new System.Windows.Forms.ProgressBar();
             this.lblStatus = new System.Windows.Forms.Label();
             this.lblHostnameLabel = new System.Windows.Forms.Label();
@@ -39,7 +45,10 @@
             this.cboBookmarks = new System.Windows.Forms.ComboBox();
             this.btnAddBookmark = new System.Windows.Forms.Button();
             this.btnRemoveBookmark = new System.Windows.Forms.Button();
+            this.lblSearch = new System.Windows.Forms.Label();
+            this.txtSearch = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.dgvResults)).BeginInit();
+            this.contextMenuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // lblIpStartLabel
@@ -114,22 +123,60 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.dgvResults.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.dgvResults.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvResults.Location = new System.Drawing.Point(15, 85);
+            this.dgvResults.ContextMenuStrip = this.contextMenuStrip1;
+            this.dgvResults.Location = new System.Drawing.Point(15, 81);
             this.dgvResults.Name = "dgvResults";
             this.dgvResults.RowHeadersVisible = false;
             this.dgvResults.RowHeadersWidth = 62;
             this.dgvResults.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvResults.Size = new System.Drawing.Size(1151, 422);
+            this.dgvResults.Size = new System.Drawing.Size(1151, 726);
             this.dgvResults.TabIndex = 5;
             this.dgvResults.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvResults_CellValueChanged);
+            // 
+            // contextMenuStrip1
+            // 
+            this.contextMenuStrip1.ImageScalingSize = new System.Drawing.Size(24, 24);
+            this.contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.copyIPToolStripMenuItem,
+            this.openInBrowserToolStripMenuItem,
+            this.remoteDesktopToolStripMenuItem,
+            this.sshToolStripMenuItem});
+            this.contextMenuStrip1.Name = "contextMenuStrip1";
+            this.contextMenuStrip1.Size = new System.Drawing.Size(218, 132);
+            this.contextMenuStrip1.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuStrip1_Opening);
+            this.contextMenuStrip1.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.contextMenuStrip1_ItemClicked);
+            // 
+            // copyIPToolStripMenuItem
+            // 
+            this.copyIPToolStripMenuItem.Name = "copyIPToolStripMenuItem";
+            this.copyIPToolStripMenuItem.Size = new System.Drawing.Size(217, 32);
+            this.copyIPToolStripMenuItem.Text = "Copy IP Address";
+            // 
+            // openInBrowserToolStripMenuItem
+            // 
+            this.openInBrowserToolStripMenuItem.Name = "openInBrowserToolStripMenuItem";
+            this.openInBrowserToolStripMenuItem.Size = new System.Drawing.Size(217, 32);
+            this.openInBrowserToolStripMenuItem.Text = "Open in Browser";
+            // 
+            // remoteDesktopToolStripMenuItem
+            // 
+            this.remoteDesktopToolStripMenuItem.Name = "remoteDesktopToolStripMenuItem";
+            this.remoteDesktopToolStripMenuItem.Size = new System.Drawing.Size(217, 32);
+            this.remoteDesktopToolStripMenuItem.Text = "Remote Desktop";
+            // 
+            // sshToolStripMenuItem
+            // 
+            this.sshToolStripMenuItem.Name = "sshToolStripMenuItem";
+            this.sshToolStripMenuItem.Size = new System.Drawing.Size(217, 32);
+            this.sshToolStripMenuItem.Text = "SSH";
             // 
             // progressBar
             // 
             this.progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.progressBar.Location = new System.Drawing.Point(15, 513);
+            this.progressBar.Location = new System.Drawing.Point(15, 813);
             this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(1044, 23);
+            this.progressBar.Size = new System.Drawing.Size(1026, 23);
             this.progressBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
             this.progressBar.TabIndex = 6;
             // 
@@ -138,9 +185,9 @@
             this.lblStatus.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.lblStatus.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblStatus.ForeColor = System.Drawing.Color.Gainsboro;
-            this.lblStatus.Location = new System.Drawing.Point(1065, 510);
+            this.lblStatus.Location = new System.Drawing.Point(1047, 813);
             this.lblStatus.Name = "lblStatus";
-            this.lblStatus.Size = new System.Drawing.Size(101, 26);
+            this.lblStatus.Size = new System.Drawing.Size(105, 23);
             this.lblStatus.TabIndex = 7;
             this.lblStatus.Text = "Ready";
             this.lblStatus.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -310,12 +357,36 @@
             this.btnRemoveBookmark.UseVisualStyleBackColor = false;
             this.btnRemoveBookmark.Click += new System.EventHandler(this.btnRemoveBookmark_Click);
             // 
+            // lblSearch
+            // 
+            this.lblSearch.AutoSize = true;
+            this.lblSearch.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblSearch.ForeColor = System.Drawing.Color.WhiteSmoke;
+            this.lblSearch.Location = new System.Drawing.Point(888, 46);
+            this.lblSearch.Name = "lblSearch";
+            this.lblSearch.Size = new System.Drawing.Size(74, 28);
+            this.lblSearch.TabIndex = 25;
+            this.lblSearch.Text = "Search:";
+            // 
+            // txtSearch
+            // 
+            this.txtSearch.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(63)))), ((int)(((byte)(65)))));
+            this.txtSearch.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtSearch.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtSearch.ForeColor = System.Drawing.Color.White;
+            this.txtSearch.Location = new System.Drawing.Point(943, 45);
+            this.txtSearch.Name = "txtSearch";
+            this.txtSearch.Size = new System.Drawing.Size(142, 30);
+            this.txtSearch.TabIndex = 26;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 25F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(48)))));
-            this.ClientSize = new System.Drawing.Size(1178, 548);
+            this.ClientSize = new System.Drawing.Size(1178, 850);
+            this.Controls.Add(this.txtSearch);
+            this.Controls.Add(this.lblSearch);
             this.Controls.Add(this.btnRemoveBookmark);
             this.Controls.Add(this.btnAddBookmark);
             this.Controls.Add(this.cboBookmarks);
@@ -344,6 +415,7 @@
             this.Name = "Form1";
             this.Text = "Host Hunter";
             ((System.ComponentModel.ISupportInitialize)(this.dgvResults)).EndInit();
+            this.contextMenuStrip1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -371,5 +443,12 @@
         private System.Windows.Forms.ComboBox cboBookmarks;
         private System.Windows.Forms.Button btnAddBookmark;
         private System.Windows.Forms.Button btnRemoveBookmark;
+        private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
+        private System.Windows.Forms.ToolStripMenuItem copyIPToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem openInBrowserToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem remoteDesktopToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem sshToolStripMenuItem;
+        private System.Windows.Forms.Label lblSearch;
+        private System.Windows.Forms.TextBox txtSearch;
     }
 }

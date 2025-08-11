@@ -2,13 +2,16 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -39,9 +42,6 @@ namespace Host_Hunter
             InitializeUI();
         }
 
-        /// <summary>
-        /// Sets up the columns and dark mode style for the DataGridView.
-        /// </summary>
         private void InitializeDataGridView()
         {
             dgvResults.Columns.Clear();
@@ -64,17 +64,15 @@ namespace Host_Hunter
             dgvResults.DefaultCellStyle.SelectionBackColor = Color.SteelBlue;
             dgvResults.DefaultCellStyle.SelectionForeColor = Color.White;
 
-            dgvResults.Columns.Add(new DataGridViewTextBoxColumn() { Name = "IPAddress", HeaderText = "IP", DataPropertyName = "IPAddress", ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.None, Width = 140 });
-            dgvResults.Columns.Add(new DataGridViewTextBoxColumn() { Name = "Status", HeaderText = "Status", DataPropertyName = "Status", ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells });
-            dgvResults.Columns.Add(new DataGridViewTextBoxColumn() { Name = "Ping", HeaderText = "Ping", DataPropertyName = "Ping", ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells });
-            dgvResults.Columns.Add(new DataGridViewTextBoxColumn() { Name = "Hostname", HeaderText = "Hostname", DataPropertyName = "Hostname", ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
-            dgvResults.Columns.Add(new DataGridViewTextBoxColumn() { Name = "Ports", HeaderText = "Ports", DataPropertyName = "Ports", ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
-            dgvResults.Columns.Add(new DataGridViewTextBoxColumn() { Name = "Comments", HeaderText = "Comments", DataPropertyName = "Comments", ReadOnly = false, AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
+            dgvResults.Columns.Add(new DataGridViewTextBoxColumn() { Name = "IPAddress", HeaderText = "IP", ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.None, Width = 140 });
+            dgvResults.Columns.Add(new DataGridViewTextBoxColumn() { Name = "Status", HeaderText = "Status", ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells });
+            dgvResults.Columns.Add(new DataGridViewTextBoxColumn() { Name = "Ping", HeaderText = "Ping", ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells });
+            dgvResults.Columns.Add(new DataGridViewTextBoxColumn() { Name = "Hostname", HeaderText = "Hostname", ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
+            dgvResults.Columns.Add(new DataGridViewTextBoxColumn() { Name = "OS", HeaderText = "OS", ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
+            dgvResults.Columns.Add(new DataGridViewTextBoxColumn() { Name = "Ports", HeaderText = "Ports", ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
+            dgvResults.Columns.Add(new DataGridViewTextBoxColumn() { Name = "Comments", HeaderText = "Comments", ReadOnly = false, AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
         }
 
-        /// <summary>
-        /// Retrieves local host information and populates the UI fields.
-        /// </summary>
         private void InitializeUI()
         {
             try
@@ -110,9 +108,6 @@ namespace Host_Hunter
             }
         }
 
-        /// <summary>
-        /// Handles the click event for the Start/Stop Scan button.
-        /// </summary>
         private async void btnScan_Click(object sender, EventArgs e)
         {
             if (btnScan.Text == "Start")
@@ -153,9 +148,6 @@ namespace Host_Hunter
             }
         }
 
-        /// <summary>
-        /// Builds the final list of ports to scan from the selected predefined list and any custom ports.
-        /// </summary>
         private void BuildPortList()
         {
             string selectedListName = cboPortSelection.SelectedItem.ToString();
@@ -174,9 +166,6 @@ namespace Host_Hunter
             }
         }
 
-        /// <summary>
-        /// Asynchronously scans a range of IP addresses using a semaphore to limit concurrency.
-        /// </summary>
         private async Task ScanIpRangeAsync(IPAddress startIp, IPAddress endIp, CancellationToken cancellationToken)
         {
             var semaphore = new SemaphoreSlim(100);
@@ -215,9 +204,6 @@ namespace Host_Hunter
             await Task.WhenAll(tasks);
         }
 
-        /// <summary>
-        /// Pings a single IP address, scans for open ports, and updates the DataGridView for every host.
-        /// </summary>
         private async Task PingAndUpdateGridAsync(IPAddress ipAddress, CancellationToken cancellationToken)
         {
             string hostname = "N/A";
@@ -225,6 +211,7 @@ namespace Host_Hunter
             bool isAlive = false;
             string status;
             Color rowColor;
+            string os = "N/A";
 
             try
             {
@@ -236,6 +223,7 @@ namespace Host_Hunter
                     {
                         isAlive = true;
                         roundtripTime = reply.RoundtripTime;
+                        os = GuessOSByTtl(reply.Options.Ttl);
                     }
                 }
             }
@@ -267,7 +255,7 @@ namespace Host_Hunter
                 if (cancellationToken.IsCancellationRequested) return;
 
                 string comment = _comments.ContainsKey(ipAddress.ToString()) ? _comments[ipAddress.ToString()] : "";
-                int rowIndex = dgvResults.Rows.Add(ipAddress.ToString(), status, isAlive ? $"{roundtripTime}ms" : "-", hostname, openPorts, comment);
+                int rowIndex = dgvResults.Rows.Add(ipAddress.ToString(), status, isAlive ? $"{roundtripTime}ms" : "-", hostname, os, openPorts, comment);
                 dgvResults.Rows[rowIndex].Cells["Status"].Style.ForeColor = rowColor;
                 dgvResults.Sort(new IpAddressComparer());
 
@@ -275,9 +263,6 @@ namespace Host_Hunter
             });
         }
 
-        /// <summary>
-        /// Scans a predefined list of TCP ports on a given IP address.
-        /// </summary>
         private async Task<string> ScanPortsAsync(IPAddress ipAddress, CancellationToken cancellationToken)
         {
             var openPorts = new List<int>();
@@ -291,7 +276,10 @@ namespace Host_Hunter
                         var task = client.ConnectAsync(ipAddress, port);
                         if (await Task.WhenAny(task, Task.Delay(200, cancellationToken)) == task && client.Connected)
                         {
-                            openPorts.Add(port);
+                            lock (openPorts)
+                            {
+                                openPorts.Add(port);
+                            }
                         }
                     }
                 }
@@ -303,9 +291,6 @@ namespace Host_Hunter
             return string.Join(", ", openPorts);
         }
 
-        /// <summary>
-        /// Updates the IP range fields when the IP or Netmask changes.
-        /// </summary>
         private void UpdateIpRange(object sender, EventArgs e)
         {
             if (IPAddress.TryParse(txtIpStart.Text, out IPAddress baseIp) && cboNetmask.SelectedItem != null)
@@ -319,9 +304,6 @@ namespace Host_Hunter
             }
         }
 
-        /// <summary>
-        /// Tries to parse a string in CIDR notation (e.g., "192.168.1.0/24") into a start and end IP address.
-        /// </summary>
         public static bool TryParseCidr(string cidr, out IPAddress startIp, out IPAddress endIp)
         {
             startIp = null;
@@ -347,9 +329,6 @@ namespace Host_Hunter
             catch { return false; }
         }
 
-        /// <summary>
-        /// Handles the Save Results button click, exporting the grid to a CSV file.
-        /// </summary>
         private void btnSaveResults_Click(object sender, EventArgs e)
         {
             if (dgvResults.Rows.Count == 0)
@@ -388,9 +367,6 @@ namespace Host_Hunter
             }
         }
 
-        /// <summary>
-        /// Saves comments for the current subnet when a comment cell is edited.
-        /// </summary>
         private void dgvResults_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0 || e.ColumnIndex != dgvResults.Columns["Comments"].Index) return;
@@ -481,7 +457,6 @@ namespace Host_Hunter
             {
                 txtIpStart.Text = parts[0];
                 cboNetmask.SelectedItem = parts[1];
-                // Manually trigger the update to recalculate the end IP
                 UpdateIpRange(sender, e);
             }
         }
@@ -494,24 +469,78 @@ namespace Host_Hunter
                 SaveBookmarks();
             }
         }
+
+        private string GuessOSByTtl(int ttl)
+        {
+            if (ttl > 0 && ttl <= 64) return "Linux/Unix";
+            if (ttl > 64 && ttl <= 128) return "Windows";
+            return "Unknown";
+        }
+
+        private void contextMenuStrip1_Opening(object sender, CancelEventArgs e)
+        {
+            if (dgvResults.SelectedRows.Count == 0)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            var selectedRow = dgvResults.SelectedRows[0];
+            var portsCellValue = selectedRow.Cells["Ports"].Value?.ToString() ?? "";
+            var openPorts = portsCellValue.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                          .Select(p => p.Trim().Split(' ')[0])
+                                          .ToList();
+
+            remoteDesktopToolStripMenuItem.Enabled = openPorts.Contains("3389");
+            sshToolStripMenuItem.Enabled = openPorts.Contains("22");
+            openInBrowserToolStripMenuItem.Enabled = openPorts.Contains("80") || openPorts.Contains("443");
+        }
+
+        private void contextMenuStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+            if (dgvResults.SelectedRows.Count == 0) return;
+            var selectedRow = dgvResults.SelectedRows[0];
+            string ipAddress = selectedRow.Cells["IPAddress"].Value.ToString();
+
+            try
+            {
+                switch (e.ClickedItem.Name)
+                {
+                    case "copyIPToolStripMenuItem":
+                        Clipboard.SetText(ipAddress);
+                        break;
+                    case "openInBrowserToolStripMenuItem":
+                        Process.Start($"http://{ipAddress}");
+                        break;
+                    case "remoteDesktopToolStripMenuItem":
+                        Process.Start("mstsc.exe", $"/v:{ipAddress}");
+                        break;
+                    case "sshToolStripMenuItem":
+                        Process.Start("cmd.exe", $"/k ssh {ipAddress}");
+                        break;
+                }
+            }
+            catch (Win32Exception ex)
+            {
+                MessageBox.Show($"Could not start the application. Please ensure it is installed and in your system's PATH.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An unexpected error occurred: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
     }
 
-    /// <summary>
-    /// Custom comparer for sorting DataGridViewRows by IP address.
-    /// </summary>
     class IpAddressComparer : System.Collections.IComparer
     {
         public int Compare(object x, object y)
         {
             var rowA = (DataGridViewRow)x;
             var rowB = (DataGridViewRow)y;
-
             var ipA = IPAddress.Parse((string)rowA.Cells["IPAddress"].Value);
             var ipB = IPAddress.Parse((string)rowB.Cells["IPAddress"].Value);
-
             var bytesA = ipA.GetAddressBytes();
             var bytesB = ipB.GetAddressBytes();
-
             for (int i = 0; i < bytesA.Length; i++)
             {
                 if (bytesA[i] != bytesB[i])
