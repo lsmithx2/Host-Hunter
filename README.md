@@ -1,11 +1,5 @@
 <div align="center">
 
-
-|  |/  |--.-----.|  |--.-----.----.    |  |--.----.----|  |--.-----.
-|     <  |  -||  _  |  _  |   _|    |  _  |   _|  |    <|  -|
-||_|||||*||      |__|| |*___|||_____|
-
-
 ### An Advanced Network Scanning and Reconnaissance Tool for Windows
 
 ![Host Hunter Screenshot](https://i.imgur.com/FiZHw1x.png) 
