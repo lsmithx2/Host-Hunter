@@ -8,7 +8,7 @@
 
 ### An Advanced Network Scanning and Reconnaissance Tool for Windows
 
-![Host Hunter Screenshot](https://i.imgur.com/example.png) 
+![Host Hunter Screenshot](https://i.imgur.com/FiZHw1x.png) 
 *(Replace this with a link to your own screenshot)*
 
 </div>
